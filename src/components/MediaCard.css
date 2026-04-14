@@ -119,3 +119,12 @@
   text-align: center;
   word-break: break-all;
 }
+
+.card-volume-slider {
+  width: 50px;
+  height: 4px;
+  margin-left: 6px;
+  align-self: center;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

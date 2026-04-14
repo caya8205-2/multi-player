@@ -3,9 +3,10 @@ import "./Toolbar.css";
 
 interface Props {
   onAddMedia: (files: FileList) => void;
+  onClearAll: () => void;
 }
 
-export default function Toolbar({ onAddMedia }: Props) {
+export default function Toolbar({ onAddMedia, onClearAll }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -13,6 +14,9 @@ export default function Toolbar({ onAddMedia }: Props) {
       <span className="toolbar-title">⬡ MultiPlayer</span>
       <button className="btn-add" onClick={() => inputRef.current?.click()}>
         + Add Media
+      </button>
+      <button className="btn-clear" onClick={onClearAll}>
+        ✕ Clear
       </button>
       <input
         ref={inputRef}

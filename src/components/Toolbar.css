@@ -34,3 +34,20 @@
 .btn-add:hover {
   opacity: 0.85;
 }
+
+.btn-clear {
+  background: transparent;
+  color: var(--red, #ff4444);
+  border: 1px solid var(--red, #ff4444);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-clear:hover {
+  background: rgba(255, 68, 68, 0.1);
+}

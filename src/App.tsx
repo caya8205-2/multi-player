@@ -16,6 +16,7 @@ export default function App() {
   const [masterDuration, setMasterDuration] = useState(0);
   const rafRef = useRef<number | null>(null);
   const masterVideoId = useRef<number | null>(null);
+  const [volume, setVolume] = useState(1);
 
   // Ambil durasi terpanjang dari semua video
   const updateMasterDuration = useCallback((newItems: MediaItem[]) => {
@@ -95,11 +96,14 @@ export default function App() {
   }, [updateMasterDuration]);
 
   const registerVideoRef = useCallback((id: number, el: HTMLVideoElement | null) => {
-    if (el) videoRefs.current.set(id, el);
-    else videoRefs.current.delete(id);
-  }, []);
+    if (el) {
+      videoRefs.current.set(id, el);
+    } else {
+      videoRefs.current.delete(id);
+    }
+  }, [volume]);
 
-  // Tick loop — sinkronisasi currentTime dari master video
+  // Sinkronisasi tick loop
   const tick = useCallback(() => {
     const masterId = masterVideoId.current;
     if (masterId !== null) {
@@ -121,6 +125,21 @@ export default function App() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
   }, []);
 
+  const handleClearAll = useCallback(() => {
+    videoRefs.current.forEach((el) => el.pause());
+    setItems([]);
+    videoRefs.current.clear();
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setMasterDuration(0);
+    masterVideoId.current = null;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const handleVolumeChange = useCallback((vol: number) => {
+    setVolume(vol);
+  }, []);
+
   const handleSeek = useCallback((time: number) => {
     videoRefs.current.forEach((el) => {
       el.currentTime = time;
@@ -138,7 +157,7 @@ export default function App() {
 
   return (
     <div className="app" onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
-      <Toolbar onAddMedia={addMedia} />
+      <Toolbar onAddMedia={addMedia} onClearAll={handleClearAll} />
 
       <div className="canvas">
         {items.length === 0 && (
@@ -173,6 +192,7 @@ export default function App() {
               onDurationLoaded={(d) => setVideoDuration(item.id, d)}
               registerVideoRef={registerVideoRef}
               isMaster={masterVideoId.current === item.id}
+              masterVolume={volume}
             />
           </Rnd>
         ))}
@@ -186,6 +206,8 @@ export default function App() {
         onPause={handlePause}
         onSeek={handleSeek}
         itemCount={items.length}
+        volume={volume}
+        onVolumeChange={handleVolumeChange}
       />
     </div>
   );

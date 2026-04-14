@@ -95,10 +95,36 @@
 
 .player-right {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.volume-slider {
+  width: 80px;
+  cursor: pointer;
+  accent-color: var(--accent);
 }
 
 .item-count {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.seekbar-tooltip {
+  position: absolute;
+  top: -30px;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  z-index: 10;
 }
