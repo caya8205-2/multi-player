@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap');
+
+:root {
+  --bg: #0e0e10;
+  --surface: #18181b;
+  --surface2: #232329;
+  --border: #2e2e36;
+  --accent: #c8f135;
+  --accent-dim: rgba(200, 241, 53, 0.12);
+  --text: #e8e8ec;
+  --text-muted: #6b6b78;
+  --red: #ff4d4d;
+  --player-h: 64px;
+  --toolbar-h: 48px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(200,241,53,0.03) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px);
+}
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.empty-icon {
+  font-size: 48px;
+  opacity: 0.2;
+  display: block;
+}
+
+.empty-state p {
+  font-size: 14px;
+  font-family: 'DM Mono', monospace;
+}
+
+.empty-sub {
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.rnd-wrapper {
+  position: absolute !important;
+}
