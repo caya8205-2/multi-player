@@ -14,7 +14,13 @@
   --toolbar-h: 48px;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background: var(--bg);
@@ -35,7 +41,7 @@ body {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(200,241,53,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 20%, rgba(200, 241, 53, 0.03) 0%, transparent 60%),
     repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px),
     repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px);
 }
@@ -67,6 +73,12 @@ body {
 .empty-sub {
   font-size: 12px;
   opacity: 0.5;
+}
+
+.empty-logo {
+  width: 64px;
+  height: 64px;
+  justify-content: center;
 }
 
 .rnd-wrapper {
