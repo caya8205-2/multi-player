@@ -84,3 +84,35 @@ body {
 .rnd-wrapper {
   position: absolute !important;
 }
+
+.toast {
+  position: fixed;
+  right: 18px;
+  bottom: calc(var(--player-h) + 18px);
+  min-width: 240px;
+  max-width: 360px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(24, 24, 27, 0.96);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.35);
+  z-index: 300;
+}
+
+.toast-success {
+  border-color: rgba(200, 241, 53, 0.35);
+  box-shadow: 0 14px 38px rgba(200, 241, 53, 0.12);
+}
+
+.toast-error {
+  border-color: rgba(255, 77, 77, 0.45);
+  box-shadow: 0 14px 38px rgba(255, 77, 77, 0.12);
+}
+
+.toast-info {
+  border-color: rgba(107, 107, 120, 0.65);
+}

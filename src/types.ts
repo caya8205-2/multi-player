@@ -39,3 +39,7 @@ export interface SessionPreset {
     height: number;
   }>;
 }
+
+export interface RestoredSessionItem extends Omit<MediaItem, "id" | "duration"> {
+  path: string;
+}

@@ -81,6 +81,45 @@
   gap: 4px;
 }
 
+.preset-group-disabled {
+  opacity: 0.72;
+}
+
+.preset-kind {
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.preset-name-input {
+  width: 116px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.preset-name-input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.preset-name-input::placeholder {
+  color: var(--text-muted);
+}
+
 .btn-preset-save {
   background: var(--surface2);
   color: var(--text);
@@ -97,6 +136,12 @@
 .btn-preset-save:hover {
   border-color: var(--accent);
   background: var(--accent-dim);
+}
+
+.btn-preset-save:disabled,
+.preset-name-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-preset-toggle {

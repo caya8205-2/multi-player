@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { appWindow } from "@tauri-apps/api/window"
+import { convertFileSrc } from "@tauri-apps/api/tauri";
 import { Rnd } from "react-rnd";
 import MediaCard from "./components/MediaCard";
 import MainPlayer from "./components/MainPlayer";
@@ -10,6 +11,12 @@ import "./App.css";
 
 let idCounter = 0;
 
+type Toast = {
+  id: number;
+  message: string;
+  tone: "success" | "error" | "info";
+};
+
 export default function App() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
@@ -19,6 +26,8 @@ export default function App() {
   const rafRef = useRef<number | null>(null);
   const masterVideoId = useRef<number | null>(null);
   const [volume, setVolume] = useState(1);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
   const [presets, setPresets] = useState<Preset[]>(() => {
     const saved = localStorage.getItem("multiplayer-presets");
     return saved ? JSON.parse(saved) : [];
@@ -27,10 +36,39 @@ export default function App() {
   useEffect(() => {
     loadSessionPresets().then(setSessionPresets);
   }, []);
-  fetch("/logo.svg")
-    .then(res => res.arrayBuffer())
-    .then(buffer => appWindow.setIcon(new Uint8Array(buffer)))
-    .catch(console.error);
+  useEffect(() => {
+    if (!(window as Window & { __TAURI__?: unknown }).__TAURI__) return;
+
+    fetch("/logo.svg")
+      .then(res => res.arrayBuffer())
+      .then(buffer => appWindow.setIcon(new Uint8Array(buffer)))
+      .catch(console.error);
+  }, []);
+
+  const showToast = useCallback((message: string, tone: Toast["tone"] = "info") => {
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+
+    setToast({
+      id: Date.now(),
+      message,
+      tone,
+    });
+
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 2600);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const savePreset = useCallback((name: string) => {
     const preset: Preset = {
@@ -44,14 +82,17 @@ export default function App() {
       localStorage.setItem("multiplayer-presets", JSON.stringify(updated));
       return updated;
     });
-  }, [items]);
+    showToast(`Layout preset "${name}" tersimpan.`, "success");
+  }, [items, showToast]);
 
   const loadPreset = useCallback((preset: Preset) => {
     setItems(prev => prev.map((item, index) => {
-      const saved = preset.layout[index];
+      const savedById = preset.layout.find((layoutItem) => layoutItem.id === item.id);
+      const saved = savedById ?? preset.layout[index];
       return saved ? { ...item, x: saved.x, y: saved.y, width: saved.width, height: saved.height } : item;
     }));
-  }, []);
+    showToast(`Layout "${preset.name}" dimuat.`, "success");
+  }, [showToast]);
 
   const deletePreset = useCallback((id: string) => {
     setPresets(prev => {
@@ -59,28 +100,53 @@ export default function App() {
       localStorage.setItem("multiplayer-presets", JSON.stringify(updated));
       return updated;
     });
-  }, []);
+    showToast("Layout preset dihapus.", "info");
+  }, [showToast]);
 
   // Save session preset
   const handleSaveSessionPreset = useCallback(async (name: string) => {
-    await saveSessionPreset(name, items, (id) => filePathMap.current.get(id));
-  }, [items]);
+    try {
+      const preset = await saveSessionPreset(name, items, (id) => filePathMap.current.get(id));
+      setSessionPresets(prev => [...prev, preset]);
+      showToast(`Session preset "${name}" tersimpan.`, "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Session preset gagal disimpan.", "error");
+    }
+  }, [items, showToast]);
 
   // Load session preset
   const handleLoadSessionPreset = useCallback(async (preset: SessionPreset) => {
-    const restored = await restoreSessionPreset(preset);
-    const newItems: MediaItem[] = restored.map((item) => ({
-      ...item,
-      id: idCounter++,
-      duration: undefined,
-    }));
-    setItems(newItems);
-  }, []);
+    try {
+      const restored = await restoreSessionPreset(preset);
+      const newItems: MediaItem[] = restored.map((item) => ({
+        ...item,
+        id: idCounter++,
+        duration: undefined,
+      }));
+      const restoredPathMap = new Map<number, string>();
+      restored.forEach((item, index) => {
+        restoredPathMap.set(newItems[index].id, item.path);
+      });
+      filePathMap.current = restoredPathMap;
+      setItems(newItems);
+      showToast(`Session "${preset.name}" dimuat.`, "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Session preset gagal dimuat.", "error");
+    }
+  }, [showToast]);
 
   const handleDeleteSessionPreset = useCallback(async (id: string) => {
-    await deleteSessionPreset(id);
-    setSessionPresets(prev => prev.filter(p => p.id !== id));
-  }, []);
+    try {
+      await deleteSessionPreset(id);
+      setSessionPresets(prev => prev.filter(p => p.id !== id));
+      showToast("Session preset dihapus.", "info");
+    } catch (error) {
+      console.error(error);
+      showToast("Session preset gagal dihapus.", "error");
+    }
+  }, [showToast]);
 
   // Ambil durasi terpanjang dari semua video
   const updateMasterDuration = useCallback((newItems: MediaItem[]) => {
@@ -98,41 +164,71 @@ export default function App() {
   }, []);
 
   const filePathMap = useRef<Map<number, string>>(new Map());
-  const addMedia = useCallback((files: FileList) => {
+  const addMedia = useCallback((input: FileList | string[]) => {
     const newItems: MediaItem[] = [];
-    Array.from(files).forEach((file) => {
-      const url = URL.createObjectURL(file);
-      const type = file.type.startsWith("video")
-        ? "video"
-        : file.type.startsWith("image")
-          ? file.type === "image/gif"
-            ? "gif"
-            : "image"
-          : file.type.startsWith("audio")
-            ? "audio"
-            : null;
+    if (Array.isArray(input)) {
+      input.forEach((path) => {
+        const url = convertFileSrc(path);
+        const ext = path.split(".").pop()?.toLowerCase() || "";
+        let type: "video" | "image" | "gif" | "audio" | null = null;
+        if (["mp4", "webm", "ogg"].includes(ext)) type = "video";
+        else if (["mp3", "wav"].includes(ext)) type = "audio";
+        else if (ext === "gif") type = "gif";
+        else if (["png", "jpg", "jpeg", "webp", "svg"].includes(ext)) type = "image";
 
-      if (!type) return;
+        if (!type) return;
 
-      const id = idCounter++;
-      
-      // Simpan path file untuk session preset
-      if ((file as any).path) {
-        filePathMap.current.set(id, (file as any).path);
-      }
+        const id = idCounter++;
+        const name = path.split("\\").pop()?.split("/").pop() || "Unknown";
 
-      newItems.push({
-        id,
-        url,
-        type,
-        name: file.name,
-        duration: undefined,
-        x: 80 + Math.random() * 200,
-        y: 80 + Math.random() * 100,
-        width: type === "audio" ? 320 : 480,
-        height: type === "audio" ? 80 : 270,
+        filePathMap.current.set(id, path);
+
+        newItems.push({
+          id,
+          url,
+          type,
+          name,
+          duration: undefined,
+          x: 80 + Math.random() * 200,
+          y: 80 + Math.random() * 100,
+          width: type === "audio" ? 320 : 480,
+          height: type === "audio" ? 80 : 270,
+        });
       });
-    });
+    } else {
+      Array.from(input).forEach((file) => {
+        const url = URL.createObjectURL(file);
+        const type = file.type.startsWith("video")
+          ? "video"
+          : file.type.startsWith("image")
+            ? file.type === "image/gif"
+              ? "gif"
+              : "image"
+            : file.type.startsWith("audio")
+              ? "audio"
+              : null;
+
+        if (!type) return;
+
+        const id = idCounter++;
+
+        if ((file as File & { path?: string }).path) {
+          filePathMap.current.set(id, (file as File & { path?: string }).path as string);
+        }
+
+        newItems.push({
+          id,
+          url,
+          type,
+          name: file.name,
+          duration: undefined,
+          x: 80 + Math.random() * 200,
+          y: 80 + Math.random() * 100,
+          width: type === "audio" ? 320 : 480,
+          height: type === "audio" ? 80 : 270,
+        });
+      });
+    }
 
     setItems((prev) => {
       const updated = [...prev, ...newItems];
@@ -140,6 +236,19 @@ export default function App() {
       return updated;
     });
   }, [updateMasterDuration]);
+
+  // Listen to Tauri file drops
+  useEffect(() => {
+    const unlisten = appWindow.onFileDropEvent((event) => {
+      if (event.payload.type === 'drop') {
+        addMedia(event.payload.paths);
+      }
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, [addMedia]);
 
   const removeItem = useCallback((id: number) => {
     videoRefs.current.delete(id);
@@ -222,7 +331,9 @@ export default function App() {
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-      if (e.dataTransfer.files.length > 0) addMedia(e.dataTransfer.files);
+      if (e.dataTransfer.files.length > 0) {
+        addMedia(e.dataTransfer.files);
+      }
     },
     [addMedia]
   );
@@ -295,6 +406,12 @@ export default function App() {
         volume={volume}
         onVolumeChange={handleVolumeChange}
       />
+
+      {toast && (
+        <div key={toast.id} className={`toast toast-${toast.tone}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
