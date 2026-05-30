@@ -9,17 +9,32 @@ interface Props {
   registerVideoRef: (id: number, el: HTMLVideoElement | null) => void;
   isMaster: boolean;
   masterVolume: number;
+  isSolo: boolean;
+  isMutedBySolo: boolean;
+  onToggleSolo: () => void;
+  onToggleLockAspectRatio: () => void;
 }
 
-export default function MediaCard({ item, onRemove, onDurationLoaded, registerVideoRef, isMaster, masterVolume }: Props) {
+export default function MediaCard({
+  item,
+  onRemove,
+  onDurationLoaded,
+  registerVideoRef,
+  isMaster,
+  masterVolume,
+  isSolo,
+  isMutedBySolo,
+  onToggleSolo,
+  onToggleLockAspectRatio
+}: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [localVolume, setLocalVolume] = useState(1);
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.volume = masterVolume * localVolume;
+      videoRef.current.volume = isMutedBySolo ? 0 : masterVolume * localVolume;
     }
-  }, [masterVolume, localVolume]);
+  }, [masterVolume, localVolume, isMutedBySolo]);
 
   useEffect(() => {
     if (item.type === "video") {
@@ -50,20 +65,38 @@ export default function MediaCard({ item, onRemove, onDurationLoaded, registerVi
           {isMaster && <span className="badge master">MASTER</span>}
           <span className="badge type">{item.type.toUpperCase()}</span>
           {(item.type === "video" || item.type === "audio") && (
-            <input 
-              type="range"
-              className="card-volume-slider"
-              min={0}
-              max={1}
-              step={0.01}
-              value={localVolume}
-              onChange={(e) => setLocalVolume(parseFloat(e.target.value))}
-              onPointerDown={(e) => e.stopPropagation()}
-              title="Volume per Card"
-            />
+            <>
+              <button
+                className={`btn-solo ${isSolo ? "active" : ""}`}
+                onClick={onToggleSolo}
+                onPointerDown={(e) => e.stopPropagation()}
+                title={isSolo ? "Turn off solo audio" : "Turn on solo audio"}
+              >
+                {isSolo ? "★ Solo" : "☆ Solo"}
+              </button>
+              <input 
+                type="range"
+                className="card-volume-slider"
+                min={0}
+                max={1}
+                step={0.01}
+                value={localVolume}
+                onChange={(e) => setLocalVolume(parseFloat(e.target.value))}
+                onPointerDown={(e) => e.stopPropagation()}
+                title="Card volume"
+              />
+            </>
           )}
+          <button
+            className={`btn-aspect ${item.lockAspectRatio ? "active" : ""}`}
+            onClick={onToggleLockAspectRatio}
+            onPointerDown={(e) => e.stopPropagation()}
+            title={item.lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
+          >
+            {item.lockAspectRatio ? "🔒 Ratio" : "🔓 Ratio"}
+          </button>
         </div>
-        <button className="btn-remove" onClick={onRemove} title="Hapus">✕</button>
+        <button className="btn-remove" onClick={onRemove} title="Remove">✕</button>
       </div>
 
       <div className="card-body">
@@ -73,12 +106,20 @@ export default function MediaCard({ item, onRemove, onDurationLoaded, registerVi
             src={item.url}
             onLoadedMetadata={handleLoadedMetadata}
             onEnded={handleEnded}
+            onDragStart={(e) => e.preventDefault()}
             className="media-el"
+            draggable={false}
             playsInline
           />
         )}
         {(item.type === "image" || item.type === "gif") && (
-          <img src={item.url} className="media-el" alt={item.name} />
+          <img
+            src={item.url}
+            className="media-el"
+            alt={item.name}
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+          />
         )}
         {item.type === "audio" && (
           <div className="audio-card">

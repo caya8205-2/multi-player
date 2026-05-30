@@ -1,13 +1,13 @@
 import { createDir, writeTextFile, readTextFile, exists } from "@tauri-apps/api/fs";
 import { BaseDirectory } from "@tauri-apps/api/path";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
-import { MediaItem, RestoredSessionItem, SessionPreset } from "./types";
+import { MediaItem, RestoredSessionItem, SessionPreset, Preset } from "./types";
 
 const DIR = "presets";
 const FILE = `${DIR}/session-presets.json`;
+const LAYOUT_FILE = `${DIR}/layout-presets.json`;
 const BASE = { dir: BaseDirectory.AppData };
-
-// Load semua preset dari disk
+// Load all session presets from disk.
 export async function loadSessionPresets(): Promise<SessionPreset[]> {
     try {
         const fileExists = await exists(FILE, BASE);
@@ -15,7 +15,7 @@ export async function loadSessionPresets(): Promise<SessionPreset[]> {
         const raw = await readTextFile(FILE, BASE);
         return JSON.parse(raw);
     } catch (error) {
-        console.error("Gagal memuat session preset dari disk:", error);
+        console.error("Failed to load session presets from disk:", error);
         return [];
     }
 }
@@ -25,12 +25,12 @@ async function persistPresets(presets: SessionPreset[]) {
         await createDir(DIR, { dir: BaseDirectory.AppData, recursive: true });
         await writeTextFile(FILE, JSON.stringify(presets), BASE);
     } catch (error) {
-        console.error("Gagal menyimpan session preset ke disk:", error);
+        console.error("Failed to save session presets to disk:", error);
         throw error;
     }
 }
 
-// Tambah preset baru dari state items sekarang
+// Save a new session preset from the current item state.
 export async function saveSessionPreset(
     name: string,
     items: MediaItem[],
@@ -58,7 +58,7 @@ export async function saveSessionPreset(
     };
 
     if (preset.items.length === 0) {
-        const error = new Error("Session preset tidak punya file path yang bisa disimpan.");
+        const error = new Error("Session preset has no file paths that can be saved.");
         console.error(error.message, { itemCount: items.length });
         throw error;
     }
@@ -68,7 +68,7 @@ export async function saveSessionPreset(
     return preset;
 }
 
-// Restore items dari preset — convert path ke object URL
+// Restore items from a preset and convert file paths to object URLs.
 export async function restoreSessionPreset(
     preset: SessionPreset
 ): Promise<RestoredSessionItem[]> {
@@ -84,13 +84,75 @@ export async function restoreSessionPreset(
     }));
 }
 
-// Hapus preset by id
+// Delete a session preset by id.
 export async function deleteSessionPreset(id: string): Promise<void> {
     try {
         const existing = await loadSessionPresets();
         await persistPresets(existing.filter((p) => p.id !== id));
     } catch (error) {
-        console.error("Gagal menghapus session preset:", error);
+        console.error("Failed to delete session preset:", error);
+        throw error;
+    }
+}
+
+// Load all layout presets from disk, or localStorage in the browser.
+export async function loadLayoutPresets(): Promise<Preset[]> {
+    const isTauri = !!(window as any).__TAURI__;
+    if (!isTauri) {
+        const saved = localStorage.getItem("multiplayer-presets");
+        return saved ? JSON.parse(saved) : [];
+    }
+    try {
+        const fileExists = await exists(LAYOUT_FILE, BASE);
+        if (!fileExists) return [];
+        const raw = await readTextFile(LAYOUT_FILE, BASE);
+        return JSON.parse(raw);
+    } catch (error) {
+        console.error("Failed to load layout presets from disk:", error);
+        return [];
+    }
+}
+
+// Persist layout presets to disk or localStorage.
+async function persistLayoutPresets(presets: Preset[]) {
+    const isTauri = !!(window as any).__TAURI__;
+    if (!isTauri) {
+        localStorage.setItem("multiplayer-presets", JSON.stringify(presets));
+        return;
+    }
+    try {
+        await createDir(DIR, { dir: BaseDirectory.AppData, recursive: true });
+        await writeTextFile(LAYOUT_FILE, JSON.stringify(presets), BASE);
+    } catch (error) {
+        console.error("Failed to save layout presets to disk:", error);
+        throw error;
+    }
+}
+
+// Save a new layout preset.
+export async function saveLayoutPreset(
+    name: string,
+    items: MediaItem[]
+): Promise<Preset> {
+    const preset: Preset = {
+        id: crypto.randomUUID(),
+        name,
+        layout: items.map(({ id, x, y, width, height }) => ({ id, x, y, width, height })),
+        createdAt: Date.now(),
+    };
+
+    const existing = await loadLayoutPresets();
+    await persistLayoutPresets([...existing, preset]);
+    return preset;
+}
+
+// Delete a layout preset by id.
+export async function deleteLayoutPreset(id: string): Promise<void> {
+    try {
+        const existing = await loadLayoutPresets();
+        await persistLayoutPresets(existing.filter((p) => p.id !== id));
+    } catch (error) {
+        console.error("Failed to delete layout preset:", error);
         throw error;
     }
 }

@@ -39,7 +39,8 @@ body {
 .canvas {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background:
     radial-gradient(ellipse at 20% 20%, rgba(200, 241, 53, 0.03) 0%, transparent 60%),
     repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px),

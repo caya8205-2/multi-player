@@ -6,7 +6,7 @@ import MediaCard from "./components/MediaCard";
 import MainPlayer from "./components/MainPlayer";
 import Toolbar from "./components/Toolbar";
 import { MediaItem, Preset, SessionPreset } from "./types";
-import { loadSessionPresets, saveSessionPreset, restoreSessionPreset, deleteSessionPreset } from "./presets";
+import { loadSessionPresets, saveSessionPreset, restoreSessionPreset, deleteSessionPreset, loadLayoutPresets, saveLayoutPreset, deleteLayoutPreset } from "./presets";
 import "./App.css";
 
 let idCounter = 0;
@@ -26,24 +26,37 @@ export default function App() {
   const rafRef = useRef<number | null>(null);
   const masterVideoId = useRef<number | null>(null);
   const [volume, setVolume] = useState(1);
+  const [alwaysOnTop, setAlwaysOnTop] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [soloItemId, setSoloItemId] = useState<number | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
-  const [presets, setPresets] = useState<Preset[]>(() => {
-    const saved = localStorage.getItem("multiplayer-presets");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [sessionPresets, setSessionPresets] = useState<SessionPreset[]>([]);
   useEffect(() => {
     loadSessionPresets().then(setSessionPresets);
+    loadLayoutPresets().then(setPresets);
   }, []);
   useEffect(() => {
     if (!(window as Window & { __TAURI__?: unknown }).__TAURI__) return;
 
-    fetch("/logo.svg")
+    fetch("/logo.png")
       .then(res => res.arrayBuffer())
       .then(buffer => appWindow.setIcon(new Uint8Array(buffer)))
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!(window as Window & { __TAURI__?: unknown }).__TAURI__) return;
+    appWindow.setAlwaysOnTop(alwaysOnTop).catch(console.error);
+  }, [alwaysOnTop]);
+
+  useEffect(() => {
+    videoRefs.current.forEach((el) => {
+      el.playbackRate = playbackRate;
+    });
+  }, [playbackRate, items]);
 
   const showToast = useCallback((message: string, tone: Toast["tone"] = "info") => {
     if (toastTimeoutRef.current) {
@@ -70,19 +83,15 @@ export default function App() {
     };
   }, []);
 
-  const savePreset = useCallback((name: string) => {
-    const preset: Preset = {
-      id: crypto.randomUUID(),
-      name,
-      layout: items.map(({ id, x, y, width, height }) => ({ id, x, y, width, height })),
-      createdAt: Date.now(),
-    };
-    setPresets(prev => {
-      const updated = [...prev, preset];
-      localStorage.setItem("multiplayer-presets", JSON.stringify(updated));
-      return updated;
-    });
-    showToast(`Layout preset "${name}" tersimpan.`, "success");
+  const savePreset = useCallback(async (name: string) => {
+    try {
+      const preset = await saveLayoutPreset(name, items);
+      setPresets(prev => [...prev, preset]);
+      showToast(`Layout preset "${name}" saved.`, "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to save layout preset.", "error");
+    }
   }, [items, showToast]);
 
   const loadPreset = useCallback((preset: Preset) => {
@@ -91,16 +100,18 @@ export default function App() {
       const saved = savedById ?? preset.layout[index];
       return saved ? { ...item, x: saved.x, y: saved.y, width: saved.width, height: saved.height } : item;
     }));
-    showToast(`Layout "${preset.name}" dimuat.`, "success");
+    showToast(`Layout "${preset.name}" loaded.`, "success");
   }, [showToast]);
 
-  const deletePreset = useCallback((id: string) => {
-    setPresets(prev => {
-      const updated = prev.filter(p => p.id !== id);
-      localStorage.setItem("multiplayer-presets", JSON.stringify(updated));
-      return updated;
-    });
-    showToast("Layout preset dihapus.", "info");
+  const deletePreset = useCallback(async (id: string) => {
+    try {
+      await deleteLayoutPreset(id);
+      setPresets(prev => prev.filter(p => p.id !== id));
+      showToast("Layout preset deleted.", "info");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to delete layout preset.", "error");
+    }
   }, [showToast]);
 
   // Save session preset
@@ -108,10 +119,10 @@ export default function App() {
     try {
       const preset = await saveSessionPreset(name, items, (id) => filePathMap.current.get(id));
       setSessionPresets(prev => [...prev, preset]);
-      showToast(`Session preset "${name}" tersimpan.`, "success");
+      showToast(`Session preset "${name}" saved.`, "success");
     } catch (error) {
       console.error(error);
-      showToast("Session preset gagal disimpan.", "error");
+      showToast("Failed to save session preset.", "error");
     }
   }, [items, showToast]);
 
@@ -130,10 +141,10 @@ export default function App() {
       });
       filePathMap.current = restoredPathMap;
       setItems(newItems);
-      showToast(`Session "${preset.name}" dimuat.`, "success");
+      showToast(`Session "${preset.name}" loaded.`, "success");
     } catch (error) {
       console.error(error);
-      showToast("Session preset gagal dimuat.", "error");
+      showToast("Failed to load session preset.", "error");
     }
   }, [showToast]);
 
@@ -141,14 +152,14 @@ export default function App() {
     try {
       await deleteSessionPreset(id);
       setSessionPresets(prev => prev.filter(p => p.id !== id));
-      showToast("Session preset dihapus.", "info");
+      showToast("Session preset deleted.", "info");
     } catch (error) {
       console.error(error);
-      showToast("Session preset gagal dihapus.", "error");
+      showToast("Failed to delete session preset.", "error");
     }
   }, [showToast]);
 
-  // Ambil durasi terpanjang dari semua video
+  // Use the longest video duration as the master timeline.
   const updateMasterDuration = useCallback((newItems: MediaItem[]) => {
     const durations = newItems
       .filter((i) => i.type === "video")
@@ -156,7 +167,7 @@ export default function App() {
     const max = durations.length > 0 ? Math.max(...durations) : 0;
     setMasterDuration(max);
 
-    // Master video = video dengan durasi terpanjang
+    // Master video = the video with the longest duration.
     const master = newItems
       .filter((i) => i.type === "video")
       .reduce((a, b) => ((a.duration ?? 0) >= (b.duration ?? 0) ? a : b), {} as MediaItem);
@@ -279,12 +290,42 @@ export default function App() {
   const registerVideoRef = useCallback((id: number, el: HTMLVideoElement | null) => {
     if (el) {
       videoRefs.current.set(id, el);
+      el.playbackRate = playbackRate;
     } else {
       videoRefs.current.delete(id);
     }
-  }, [volume]);
+  }, [playbackRate]);
 
-  // Sinkronisasi tick loop
+  const handleAutoArrange = useCallback(() => {
+    setItems((prev) => {
+      const tileWidth = 160;
+      const tileHeight = 304;
+      const canvasWidth = canvasRef.current?.clientWidth ?? window.innerWidth;
+      const columns = Math.max(1, Math.min(7, Math.floor(canvasWidth / tileWidth)));
+
+      return prev.map((item, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+
+        return {
+          ...item,
+          x: column * tileWidth,
+          y: row * tileHeight,
+          width: tileWidth,
+          height: tileHeight,
+        };
+      });
+    });
+    showToast("Layout arranged into a grid.", "success");
+  }, [showToast]);
+
+  const toggleLockAspectRatio = useCallback((id: number) => {
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, lockAspectRatio: !i.lockAspectRatio } : i))
+    );
+  }, []);
+
+  // Synchronize the playback tick loop.
   const tick = useCallback(() => {
     const masterId = masterVideoId.current;
     if (masterId !== null) {
@@ -351,27 +392,33 @@ export default function App() {
         onSaveSessionPreset={handleSaveSessionPreset}
         onLoadSessionPreset={handleLoadSessionPreset}
         onDeleteSessionPreset={handleDeleteSessionPreset}
+        alwaysOnTop={alwaysOnTop}
+        onToggleAlwaysOnTop={() => setAlwaysOnTop((prev) => !prev)}
+        onAutoArrange={handleAutoArrange}
       />
 
-      <div className="canvas">
+      <div className="canvas" ref={canvasRef}>
         {items.length === 0 && (
           <div className="empty-state">
             <span className="empty-icon">
-              <img src="/logo.svg" alt="Logo" className="empty-logo" />
+              <img src="/logo.png" alt="Logo" className="empty-logo" />
             </span>
-            <p>Drop file ke sini atau klik <strong>Add Media</strong></p>
-            <p className="empty-sub">Video, Gambar, GIF, Audio — semua didukung</p>
+            <p>Drop files here or click <strong>Add Media</strong></p>
+            <p className="empty-sub">Videos, images, GIFs, and audio are supported</p>
           </div>
         )}
 
         {items.map((item) => (
           <Rnd
             key={item.id}
+            cancel=".card-volume-slider, .btn-remove, .btn-solo, .btn-aspect"
+            dragHandleClassName="card-header"
             position={{ x: item.x, y: item.y }}
             size={{ width: item.width, height: item.height }}
             minWidth={160}
             minHeight={item.type === "audio" ? 60 : 120}
             bounds="parent"
+            lockAspectRatio={item.lockAspectRatio || false}
             onDrag={(_, d) => updateItemBounds(item.id, { x: d.x, y: d.y })}
             onResize={(_, __, ref, ___, pos) =>
               updateItemBounds(item.id, {
@@ -390,6 +437,10 @@ export default function App() {
               registerVideoRef={registerVideoRef}
               isMaster={masterVideoId.current === item.id}
               masterVolume={volume}
+              isSolo={soloItemId === item.id}
+              isMutedBySolo={soloItemId !== null && soloItemId !== item.id}
+              onToggleSolo={() => setSoloItemId((prev) => (prev === item.id ? null : item.id))}
+              onToggleLockAspectRatio={() => toggleLockAspectRatio(item.id)}
             />
           </Rnd>
         ))}
@@ -405,6 +456,8 @@ export default function App() {
         itemCount={items.length}
         volume={volume}
         onVolumeChange={handleVolumeChange}
+        playbackRate={playbackRate}
+        onPlaybackRateChange={setPlaybackRate}
       />
 
       {toast && (

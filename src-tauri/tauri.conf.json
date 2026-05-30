@@ -30,6 +30,10 @@
       },
       "dialog": {
         "all": true
+      },
+      "window": {
+        "setAlwaysOnTop": true,
+        "setIcon": true
       }
     },
     "bundle": {

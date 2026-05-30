@@ -128,3 +128,28 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   z-index: 10;
 }
+
+.speed-control {
+  display: flex;
+  align-items: center;
+}
+
+.speed-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  padding: 4px 6px;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.15s;
+}
+
+.speed-select:hover,
+.speed-select:focus {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface);
+}

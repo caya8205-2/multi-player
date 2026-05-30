@@ -10,6 +10,7 @@ export interface MediaItem {
   y: number;
   width: number;
   height: number;
+  lockAspectRatio?: boolean;
 }
 
 export interface Preset {
@@ -30,7 +31,7 @@ export interface SessionPreset {
   name: string;
   createdAt: number;
   items: Array<{
-    path: string;       // absolute path file asli
+    path: string;       // original absolute file path
     name: string;
     type: MediaType;
     x: number;

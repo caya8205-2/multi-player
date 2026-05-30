@@ -11,6 +11,8 @@ interface Props {
   itemCount: number;
   volume: number;
   onVolumeChange: (vol: number) => void;
+  playbackRate: number;
+  onPlaybackRateChange: (rate: number) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -20,7 +22,19 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function MainPlayer({ isPlaying, currentTime, duration, onPlay, onPause, onSeek, itemCount, volume, onVolumeChange }: Props) {
+export default function MainPlayer({
+  isPlaying,
+  currentTime,
+  duration,
+  onPlay,
+  onPause,
+  onSeek,
+  itemCount,
+  volume,
+  onVolumeChange,
+  playbackRate,
+  onPlaybackRateChange
+}: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverLeft, setHoverLeft] = useState<number>(0);
@@ -113,6 +127,19 @@ export default function MainPlayer({ isPlaying, currentTime, duration, onPlay, o
       </div>
 
       <div className="player-right">
+        <div className="speed-control" title="Global playback speed">
+          <select
+            className="speed-select"
+            value={playbackRate}
+            onChange={(e) => onPlaybackRateChange(parseFloat(e.target.value))}
+          >
+            <option value={0.5}>0.5x Speed</option>
+            <option value={1}>1.0x Speed</option>
+            <option value={1.25}>1.25x Speed</option>
+            <option value={1.5}>1.5x Speed</option>
+            <option value={2}>2.0x Speed</option>
+          </select>
+        </div>
         <input
           type="range"
           className="volume-slider"

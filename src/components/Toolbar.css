@@ -178,7 +178,7 @@
 .preset-dropdown {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  right: 0;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -231,4 +231,32 @@
 .preset-item button:hover {
   color: var(--red);
   background: rgba(255, 77, 77, 0.1);
+}
+
+.btn-arrange,
+.btn-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-arrange:hover,
+.btn-pin:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.btn-pin.active {
+  border-color: var(--accent);
+  color: var(--accent);
 }

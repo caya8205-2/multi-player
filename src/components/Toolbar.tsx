@@ -14,6 +14,9 @@ interface Props {
   onSaveSessionPreset: (name: string) => void;
   onLoadSessionPreset: (preset: SessionPreset) => void;
   onDeleteSessionPreset: (id: string) => void;
+  alwaysOnTop: boolean;
+  onToggleAlwaysOnTop: () => void;
+  onAutoArrange: () => void;
 }
 
 export default function Toolbar({
@@ -26,7 +29,10 @@ export default function Toolbar({
   sessionPresets,
   onSaveSessionPreset,
   onLoadSessionPreset,
-  onDeleteSessionPreset
+  onDeleteSessionPreset,
+  alwaysOnTop,
+  onToggleAlwaysOnTop,
+  onAutoArrange
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [showPresets, setShowPresets] = useState(false);
@@ -79,13 +85,33 @@ export default function Toolbar({
         Clear
       </button>
 
-      <div className="preset-group" title="Simpan dan muat ulang posisi serta ukuran item yang sedang aktif.">
+      <button className="btn-arrange" onClick={onAutoArrange} title="Arrange all media into a grid">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+        Arrange Grid
+      </button>
+
+      {isTauri && (
+        <button className={`btn-pin ${alwaysOnTop ? "active" : ""}`} onClick={onToggleAlwaysOnTop} title="Keep this window always on top">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="17" x2="12" y2="22" />
+            <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.56A2 2 0 0 1 15 9.2V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.2a2 2 0 0 1-.78 1.56l-2.78 3.56a2 2 0 0 0-.44 1.24V17z" />
+          </svg>
+          {alwaysOnTop ? "Pinned" : "Pin Window"}
+        </button>
+      )}
+
+      <div className="preset-group" title="Save and reload the position and size of the current items.">
         <span className="preset-kind">Layout</span>
         <input
           type="text"
           value={layoutPresetName}
           onChange={(e) => setLayoutPresetName(e.target.value)}
-          placeholder="Nama layout"
+          placeholder="Layout name"
           className="preset-name-input"
         />
         <button
@@ -130,15 +156,15 @@ export default function Toolbar({
       <div
         className={`preset-group ${!isTauri ? "preset-group-disabled" : ""}`}
         title={isTauri
-          ? "Simpan media beserta layout-nya agar bisa dimuat ulang di desktop."
-          : "Session preset hanya tersedia di build desktop/Tauri."}
+          ? "Save media files with their layout so they can be reloaded on desktop."
+          : "Session presets are only available in the desktop/Tauri build."}
       >
         <span className="preset-kind">Session</span>
         <input
           type="text"
           value={sessionPresetName}
           onChange={(e) => setSessionPresetName(e.target.value)}
-          placeholder={isTauri ? "Nama session" : "Desktop only"}
+          placeholder={isTauri ? "Session name" : "Desktop only"}
           className="preset-name-input"
           disabled={!isTauri}
         />

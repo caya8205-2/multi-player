@@ -1,68 +1,68 @@
-# Multiplayer App
+# MultiPlayer App
 
-**Multiplayer App** adalah aplikasi desktop berbasis [Tauri](https://tauri.app/) yang memungkinkan kamu untuk memutar berbagai media secara bersamaan dalam satu kanvas interaktif. Kamu bisa mengatur tata letak (layout) setiap media sesuka hati, menyimpannya sebagai preset, dan memutarnya secara sinkron.
+**MultiPlayer App** is a Tauri desktop app for playing multiple media files on one interactive canvas. Add videos, images, GIFs, and audio, arrange them freely or snap them into a clean portrait grid, then control playback from a shared master player.
 
 <p align="center">
-  <img src="public/logo.svg" width="128" alt="Multiplayer App Logo">
+  <img src="public/logo.svg" width="128" alt="MultiPlayer App logo">
 </p>
 
-## Fitur Utama
+## Features
 
-- **Multi-Media Support**: Putar Video, Gambar, GIF, dan Audio secara bersamaan.
-- **Interactive Canvas**: Drag-and-drop media di mana saja. Ubah ukuran (resize) setiap elemen dengan mudah.
-- **Master Control**: Kontrol playback (Play, Pause, Seek, Volume) untuk semua media video secara sinkron.
-- **Layout Presets**: Simpan konfigurasi posisi dan ukuran jendela media favoritmu.
-- **Session Saving**: Simpan seluruh sesi kerja (termasuk file path dan layout) untuk dilanjutkan nanti.
-- **Native Performance**: Dibangun dengan Rust dan Tauri untuk performa yang ringan dan cepat.
+- **Mixed media canvas**: Place videos, images, GIFs, and audio cards in the same workspace.
+- **Drag and resize**: Move cards from their header and resize them directly on the canvas.
+- **Arrange grid**: Quickly snap active media into a tight portrait grid layout.
+- **Master playback**: Play, pause, seek, adjust volume, and change playback speed from the bottom control bar.
+- **Per-card audio control**: Adjust volume per card and use solo mode when you need to isolate one source.
+- **Layout presets**: Save and reload card positions and sizes.
+- **Session presets**: In the desktop build, save media file paths together with the layout so a full session can be restored later.
+- **Always-on-top window**: Pin the desktop window above other apps when needed.
 
 ## Tech Stack
 
-- **Frontend**: [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **Backend/Core**: [Tauri](https://tauri.app/) (Rust)
+- **Frontend**: [React](https://reactjs.org/) and [TypeScript](https://www.typescriptlang.org/)
+- **Build tool**: [Vite](https://vitejs.dev/)
+- **Desktop shell**: [Tauri](https://tauri.app/) with Rust
 - **Styling**: Vanilla CSS
-- **Components**: `react-rnd` untuk interaksi resize & drag.
+- **Drag and resize**: [`react-rnd`](https://github.com/bokuweb/react-rnd)
 
-## Memulai
+## Getting Started
 
-### Prasyarat
-- [Node.js](https://nodejs.org/) (versi terbaru)
+### Requirements
+
+- [Node.js](https://nodejs.org/)
 - [Rust](https://www.rust-lang.org/tools/install)
-- Build tools untuk Windows (C++ build tools)
+- Windows C++ build tools
 
-### Instalasi
+### Install
 
-1. Clone repositori ini:
-   ```bash
-   git clone https://github.com/username/multiplayer-app.git
-   cd multiplayer-app
-   ```
+```bash
+npm install
+```
 
-2. Instal dependensi:
-   ```bash
-   npm install
-   ```
+### Run in Development
 
-### Jalankan di Mode Pengembangan
 ```bash
 npm run tauri dev
 ```
 
-### Build Aplikasi
+### Build the App
+
 ```bash
 npm run tauri build
 ```
 
-## Cara Penggunaan
+## Usage
 
-1. **Tambah Media**: Klik tombol **"Add Media"** pada toolbar atau langsung **Drag & Drop** file media ke dalam aplikasi.
-2. **Atur Layout**: Geser media atau tarik ujungnya untuk mengubah ukuran.
-3. **Simpan Preset**: Gunakan menu Preset di toolbar untuk menyimpan tata letak yang sudah kamu buat.
-4. **Master Player**: Gunakan bar kontrol di bagian bawah untuk mengatur semua video sekaligus.
+1. Click **Add Media** or drop supported media files onto the canvas.
+2. Drag cards from their header, resize them from the edges, or click **Arrange Grid** for a tight portrait layout.
+3. Use **Save Layout** to store the current card positions and sizes.
+4. Use **Save Session** in the desktop build to store the media file paths and layout together.
+5. Control playback, seeking, global volume, and playback speed from the bottom player.
 
-## Lisensi
+## Notes
 
-Proyek ini berada di bawah lisensi MIT. Silakan gunakan dan modifikasi sesuai kebutuhan.
+Layout presets are available in both browser development mode and the desktop build. Session presets require the desktop/Tauri build because they depend on local file paths.
 
----
-Dibuat menggunakan Tauri + React.
+## License
+
+MIT. Use and modify it as needed.
